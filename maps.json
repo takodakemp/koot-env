@@ -1,0 +1,26 @@
+{
+    "existingMap1": {
+      "name": "existingUser1",
+      "level": 5,
+      "gold": 500,
+      "health": 999999999999,
+      "items": [
+        "sword",
+        "shield"
+      ],
+      "boon": "strength",
+      "origin": "earth"
+    },
+    "existingMap2": {
+      "name": "existingUser2",
+      "level": 0,
+      "gold": 1e+25,
+      "items": [
+        "potion",
+        "armor"
+      ],
+      "effect": "inactive",
+      "boon": "healing",
+      "origin": "water"
+    }
+}
