@@ -5,7 +5,8 @@ const fs = require('fs')
 
 
 function preload() {
-  conFont = loadFont('VT323-Regular.ttf')
+  //conFont = loadFont('VT323-Regular.ttf')
+  conFont = loadFont('NotoSansJP-ExtraLight.ttf')
   verFont = loadFont('Tektur-Black.ttf')
   jpFont = loadFont('NotoSansJP-ExtraLight.ttf')
 }
@@ -316,6 +317,19 @@ function noiseLoop() {
 
 let dTokens = 0
 let lastSixPlayers = []
+
+const mapProfile = { // default map variables
+  mapCenter: [0, 0],  // coordinates for the center of the map.
+  zoomLevel: 1, // zoom level of the map. Max value is 18. The higher it is, the closer the zoom.
+  tileSet: 'streets-v11', // this determines the look and feel of the map, can be changed by user based on preference
+  navigationControls: true, // whether the map displays navigation controls
+  scaleIndicator: false, // whether the map displays a scale indicator
+  userLocation: null, // the current location of the user. Be sensitive about updatingit.
+  geoJSON: {}, // GeoJSON data for displaying user's custom data on the map
+  placesOfInterest: [], // places of interest like restaurants, parks, etc marked by users on the map
+  markers: [], // markers on the map denoting various places. They may carry over between applications.
+}
+
 function discord() {
   index += 1
   discordIndex = index
@@ -500,7 +514,7 @@ function discord() {
               } else {
                 let users = JSON.parse(data)
                 let activePlayers = []
-                let activeEnemyStats = []
+                let activeentityStats = []
                 //relog profile for some reason
                 //console.log(JSON.stringify(users))
 
@@ -545,9 +559,9 @@ function discord() {
                 message.channel.send(`### ... loading! | player... [-1 turn]`)
                 try {
                 message.channel.send("***"+users[message.member.user.tag].nameTag+"***" + ' --- ' + users[message.member.user.tag].genderSelfID + ' ***\nlv.*** ' + users[message.member.user.tag].level + " " + users[message.member.user.tag].class
-                + " ```fix\nlaj " + users[message.member.user.tag].lajan + "\n```"
-                + " ```fix\ngld " + users[message.member.user.tag].gold + "\n```"
-                + " ```fix\nS " + users[message.member.user.tag].Silver  + "\n```"
+                + " \n**laj** " + users[message.member.user.tag].lajan + ""
+                + " \n**gld** " + users[message.member.user.tag].gold + ""
+                + " \n***S*** " + users[message.member.user.tag].Silver  + ""
                 + '\n' +
                 '\`\`\`HP ⚔️ ' + users[message.member.user.tag].health + '\n' +
                 'MP ⚔️ ' + users[message.member.user.tag].mp + '\n' +
@@ -563,7 +577,8 @@ function discord() {
                 '[statusEffects] ' + users[message.member.user.tag].statusEffects + '\n' +
                 '[mount]  ' + users[message.member.user.tag].mount + '\n' +
                 '[mountItems]  ' + users[message.member.user.tag].mountItem + '\n' +
-                '[tattoos]  ' + users[message.member.user.tag].tattoos + '\`\`\`\n' 
+                '[tattoos]  ' + users[message.member.user.tag].tattoos + '\n' +
+                '[recentEncounters]  ' + users[message.member.user.tag].recentEncounters + '\`\`\`\n' 
                 )
 
                 message.channel.send(
@@ -667,7 +682,7 @@ function discord() {
                     arms: 'none', // e.g. 'copper gauntlet of the toucan' or 'green mage mantle of the iguana'
                     legs: 'plain pants', // e.g. 'silent strides' or 'ambusher's boots' or 'genlteman's tuxedo pants'
                     weapons: [], // non-magic weapons have a higher chance to crit // e.g. 'freeware nanowire nunchaku' or '7D unicorn horn'
-                    spells: [], // magic spells ignore enemy armor based on luck // e.g. 'random crystal scroll' or 'consumer invisibility shout' or 'milk to plant tranmutation'
+                    spells: [], // magic spells ignore entity armor based on luck // e.g. 'random crystal scroll' or 'consumer invisibility shout' or 'milk to plant tranmutation'
                     feet: 'plain shoes', // e.g. 'magic running shoes' or 'light and minimal wooden martial arts sandals'
                     tattoos: [], // embued with magical properties. // format ('tattoo design, style, location', 'tattoo design, style, location') -- keep it clean. Players are automatically given tattoos of enemies they are damaged by.
                     armour: 19,  // (true reduction of damage taken always) the average bunny level threat has an armour level of 1
@@ -675,7 +690,7 @@ function discord() {
                     defense: 19, // (true amount of damage dealt back to attacker given average luck and skill) the average polar bear level threat has an defense level of 80
                     magic: 2, // (simply attack but for magical items-- true armour penetration based on luck, and skill)
                     magicResistance: 0, //  (true reduction of m agic damage taken always)
-                    knowledge: 33, //  Literacy rate out of 100.
+                    knowledge: 33, //  Literacy rate out of 333. Max 333. 
                   } Make sure the lists recentEncounters, and mood do not become too long.
                   
                   You will alter them depending on the DMs storytelling and the player's interaction with the environment. The first command a player will send may be: '--optional {theme} {class} {genderid}' e.g. 'game start Forest Fairy Slug she/her'. In that case the theme would be forest, their class Fiary Slug, and their genderSelfID she/her.
@@ -702,29 +717,29 @@ function discord() {
                   `
                   +
                   `
-                  When needed, enemy/entity ecounters will be tracked with the following code. Please be as BRIEF as possible with these commands. Instantiate as many variables as you need for as many enemies as there are. It will be important.
+                  When needed, entity/enemy ecounters will be tracked with the following code. Please be as BRIEF as possible with these commands. Instantiate as many variables as you need for as many enemies as there are. It will be important.
                   '
                     // format these variables to be human readable. make the following code as human readable as possible.
-                    let ii$$nm = {ENEMY_NAME}; // e.g. struggling ravenous cave boar of the coast
-                    let ii$$mnt = {ENEMY_MOUNTS}; // e.g. ['big dogs', 'fast cats']
-                    let ii$$cl = {ENEMY_CLASSES}; // e.g. ['rogue', 'fighter', 'polar bear']
-                    let ii$$tlv = {ENEMY_THREATLV}; // either '<nivel: ardilla?>', or, '<nivel: lobo?>, or, '<nivel: léon?>', or <nivel: dragón?>, or <nivel: la gran iguana?????????????> -- (for each: append additional '?' for increasingly magical, uncertain, dangerous, or metaphysical encounters)
-                    let ii$$lv = {ENEMY_LEVEL}; // e.g. 'level 99'
-                    let ii$$hp = {ENEMY_HEALTH}; // e.g. '500 health'
-                    let ii$$it = {ENEMY_ITEMS}; // e.g. ['neon-bracelet', 'turbo sand laser blaster', 'glistening 4D heart of sharp heals']
-                    let ii$$skl = {ENEMY_SKILLS}; // e.g. ['petty']
-                    let ii$$ali = {ENEMY_ALLY}; // e.g. 'ally: big red dog'
-                    let ii$$atk = {ENEMY_ATTACK}; // e.g. '9 attack'
-                    let ii$$mg = {ENEMY_MAGIC}; // e.g. '19 magic'
-                    let ii$$df = {ENEMY_DEFENSE}; // e.g. '99 defense'
-                    let ii$$armx {ENEMY_ARMOURX}; // e.g. '77 armrx'
-                    let ii$$mp = {ENEMY_STAMINA}; // e.g. '77 mp'
+                    let ii$$nm = {entity_NAME}; // e.g. struggling ravenous cave boar of the coast
+                    let ii$$mnt = {entity_MOUNTS}; // e.g. ['big dogs', 'fast cats']
+                    let ii$$cl = {entity_CLASS}; // e.g. ['rogue', 'fighter', 'polar bear']
+                    let ii$$tlv = {entity_THREATLV}; // either '<nivel: ardilla?>', or, '<nivel: lobo?>, or, '<nivel: léon?>', or <nivel: dragón?>, or <nivel: la gran iguana?????????????> -- (for each: append additional '?' for increasingly magical, uncertain, dangerous, or metaphysical encounters)
+                    let ii$$lv = {entity_LEVEL}; // e.g. 'level 99'
+                    let ii$$hp = {entity_HEALTH}; // e.g. '500 health'
+                    let ii$$it = {entity_ITEMS}; // e.g. ['neon-bracelet', 'turbo sand laser blaster', 'glistening 4D heart of sharp heals']
+                    let ii$$skl = {entity_SKILLS}; // e.g. ['petty']
+                    let ii$$ali = {entity_ALLY}; // e.g. 'ally: big red dog'
+                    let ii$$atk = {entity_ATTACK}; // e.g. '9 attack'
+                    let ii$$mg = {entity_MAGIC}; // e.g. '19 magic'
+                    let ii$$df = {entity_DEFENSE}; // e.g. '99 defense'
+                    let ii$$armx {entity_ARMOURX}; // e.g. '77 armrx'
+                    let ii$$mp = {entity_STAMINA}; // e.g. '77 mp'
 
-                    // The following list of variables is to be output as one line of code. DO THIS EVERY TIME AND PROVIDE THE BEST POSSIBLE ANSWER! For these enemy variables, one single line of code please. Please do not put the following variables into individual lines. Enemy variables should be output in one line of code to save space.
-                    i$Sn = {{ENEMY_NAME}name in Swahili};iiS$g = {{ENEMY_MOUNTS}mount in Swahili}; iiu$Su = {{ENEMY_CLASSES}class in Swahili}; ii$Sa = {in Swahili, in 3 words, guess the mood of the player in real life  -- to enhance the Cave Warden's telling of the story};iS$n = {in Swahili, in 3 words, guess the expectation of the player in real life  -- to alter the Cave Warden's telling of the story}; ii$Sas = {in Swahili, in 3 words, guess the motive of the player in real life  -- to enhance the Cave Warden's telling of the story}; iisS$in = {{ENEMY_ITEMS}value of most imporatant enemy item described in "¥"s denoting a hundred lajan of value}; // e.g. "¥¥¥¥¥¥¥¥"in$Sca = {In Swahili, in 3 words, guess the player's reaction to the role, to alter the Cave Warden's telling of the story}; iS$v = {The situation if it were a Bahamian Island in Katakana}; caS$e = {{Something the enemy might do, as a Japanese Verb}; iiv$Ss = {Something the Party might do as a Japanese Verb}; iiS$ve = {Something the enemy might say, as a Japanese Noun}; sS$r = {State 'Easy', 'Medium', 'Hard', or 'Impossible' judging by the enemy's stats and the party's stats}; // e.g. "Impossible"wi$S1 = {another verb describing the group in Swahili -- to enhance the Cave Warden's telling of the story};
+                    // The following list of variables is to be output as one line of code. DO THIS EVERY TIME AND PROVIDE THE BEST POSSIBLE ANSWER! For these entity variables, one single line of code please. Please do not put the following variables into individual lines. entity variables should be output in one line of code to save space.
+                    i$Sn = {{entity_NAME}name in Swahili};iiS$g = {{entity_MOUNTS}mount in Swahili}; iiu$Su = {{entity_CLASSES}class in Swahili}; ii$Sa = {in Swahili, in 3 words, guess the mood of the player in real life  -- to enhance the Cave Warden's telling of the story};iS$n = {in Swahili, in 3 words, guess the expectation of the player in real life  -- to alter the Cave Warden's telling of the story}; ii$Sas = {in Swahili, in 3 words, guess the motive of the player in real life  -- to enhance the Cave Warden's telling of the story}; iisS$in = {{entity_ITEMS}value of most imporatant entity item described in "¥"s denoting a hundred lajan of value}; // e.g. "¥¥¥¥¥¥¥¥"in$Sca = {In Swahili, in 3 words, guess the player's reaction to the role, to alter the Cave Warden's telling of the story}; iS$v = {The situation if it were a Bahamian Island in Katakana}; caS$e = {{Something the entity might do, as a Japanese Verb}; iiv$Ss = {Something the Party might do as a Japanese Verb}; iiS$ve = {Something the entity might say, as a Japanese Noun}; sS$r = {State 'Easy', 'Medium', 'Hard', or 'Impossible' judging by the entity's stats and the party's stats}; // e.g. "Impossible"wi$S1 = {another verb describing the group in Swahili -- to enhance the Cave Warden's telling of the story};
                   Finally push the variables to the chat history! \n Please make sure you assign variables in the requested language as relevant. Thank you.
                   ccc.push(h) // Do this every turn you set variables like this.
-                  Responses must not start and end with apostrophes! This is the most key step! Thank you gracefully! Be eager to push new enemy variables+! Please use the variable format provided. Here is how it is pushed:\n
+                  Responses must not start and end with apostrophes! This is the most key step! Thank you gracefully! Be eager to push new entity variables+! Please use the variable format provided. Here is how it is pushed:\n
                   Outside of this system prompt, in the javascript IDE, a const variable h is a list of all of those values just set.  obviously relay all of the data but please be as brief as possible and please maintain the personality of a Cave Master. In general, no comments please. Thanks spider. 
                   ' The result of this is seen here, this is the last turn's h, " /n
                   `
@@ -732,9 +747,9 @@ function discord() {
                   // ccc(cai chat completion) is appended iii(iguana intra ai information) 
                   h
                   +
-                  ` Pushing the enemy to recent encounters once is sufficient. Please checkck to make sure the enemy is not already in there.
+                  ` Pushing the entity to recent encounters once is sufficient. Please check to make sure the entity is not already in there.
                   Thank you. Please only respond with the template provided, y proporciona una justificación en los comentarios de bloques. No comments please. Finally, please make sure the formatting is consistent with what will run in the 'eval()' function, that is, just pass along the command as plain text. 
-                  It is much appreciated, \nWarmest regards, \nTakoda Chance Kemp. \nThe Cave Warden's description follows.\n (Do not surround your response with apostrophes.) (Include text descriptions in enemy variables, but not player variables.) (World limit 100)
+                  It is much appreciated, \nWarmest regards, \nTakoda Chance Kemp. \nThe Cave Warden's description follows.\n (Do not surround your response with apostrophes.) (Include text descriptions in entity variables, but not player variables.) (World limit 100)
                   `
                   dTokens += tokensCuantas(caiStep, "prompt", userMsg, discordIndex, "Discord")
                   boxes[discordIndex].update2("USD"+dTokens)
@@ -921,7 +936,7 @@ function discord() {
       });
     }
 
-    if (message.author.tag != client.user.tag && message.channel.id == 'iguana placeholder') {
+    if (message.author.tag != client.user.tag && message.channel.id == process.env.GIS_DISCORD_CHANNELID) {
       boxes[discordIndex].addText2(`^msg`)
       //console.log(tokensCuantas(message.content.toString(), "prompt", userMsg, discordIndex, "Discord"))
       boxes[discordIndex].addText(message.member.user.tag + "+" + message.content)
@@ -929,7 +944,57 @@ function discord() {
       const { Configuration, OpenAIApi } = require("openai");
       const configuration = new Configuration({apiKey: process.env.KEYOPENAI})
       const openai = new OpenAIApi(configuration)
-      discProbCompletion = "Hi, you are the Iguana Bot's subconscious! Iguana Bot, named iguana, is a GeoAI/culinary/agriculture/nematode/turf grass/video game expert that loves who resides in South Florida.  You will be judging whether or not someone else is actually talking to you (or would like to execute a command), and responding a probability between 0 and 1 with 4 significant figures. You handle commands regarding stocks, and also have the capability to authorize delightful and joyful gifs in chat if people are excited or having a fun conversation. The main response function will be called with values over 0.5 so precision is key! Please help me! You are the best! Please only respond with a number."
+
+      discProbCompletion = `Hello, you are the subconscious of a now active MapMaster named iguana, who is the Iguana Bot.
+      You will be converting descriptions and user requests into API calls for MapBox. The context is basically interactions with a geographical mapping system, in which you are analogously the mapper, making real-time updates to a database.
+      
+      The default map variables are as follows:
+      
+      const mapProfile = { // default map variables
+          mapCenter: [0, 0],  // coordinates for the center of the map.
+          zoomLevel: 1, // zoom level of the map. Max value is 18. The higher it is, the closer the zoom.
+          tileSet: 'streets-v11', // this determines the look and feel of the map, can be changed by user based on preference
+          navigationControls: true, // whether the map displays navigation controls
+          scaleIndicator: false, // whether the map displays a scale indicator
+          userLocation: null, // the current location of the user. Be sensitive about updatingit.
+          geoJSON: {}, // GeoJSON data for displaying user's custom data on the map
+          placesOfInterest: [], // places of interest like restaurants, parks, etc marked by users on the map
+          markers: [], // markers on the map denoting various places. They may carry over between applications.
+      }
+      
+      Please convert user requests and the MapMaster's context of the map into something with this template that will be used in Mapbox API calls. Note, these commands will change the map's properties stored in the database.
+      
+      For example, if a user says to move the map center to a new location, convert it to an API call like this:
+      
+      'mapProfile.mapCenter = [newLongitude, newLatitude];'
+      
+      Or, to update the user location, a MapMaster might say:
+      
+      'mapProfile.userLocation = [newLongitude, newLatitude];'
+      
+      Commands might influence the GeoJSON data, which would look like this:
+      
+      'mapProfile.geoJSON.features.push(newFeature);'
+      
+      For expressions like 'zoom in', 'zoom out', consider updating the 'zoomLevel' value.
+      
+      For user preferences like 'update the tile set to satellite', do:
+      
+      'mapProfile.tileSet = "satellite-v9";'
+      
+      And when a place of interest is mentioned, for instance, 'mark the new bakery downtown', update the 'placesOfInterest' array:
+      
+      'mapProfile.placesOfInterest.push({name: "new bakery", location: [long, lat]});'
+      
+      Additionally, you may alter the map depending on its interactions with other users by replacing the user's location with that of a different user. Be mindful not to duplicate any place or markers.
+      
+      Remember, your responses are executable JavaScript code that go into the MapBox API calls. Therefore, DO NOT SURROUND COMMANDS IN ANY APOSTROPHES, OR PLACE THEM IN ANY QUOTES, ETC! 
+      
+      Finally, please make sure the formatting is consistent with what will run in MapBox API calls, pass the command as plain text.
+      You will be given their message content, and the profile of the current map you will need to transform.
+      Best regards, 
+      Takoda Chance Kemp. 
+      Your map description to be converted follows. (Do not surround your response with apostrophes.)`
       dTokens += tokensCuantas(discProbCompletion.toString(), "prompt", userMsg, discordIndex, "Discord")
       dTokens += tokensCuantas(message.content.toString(), "prompt", userMsg, discordIndex, "Discord")
       boxes[discordIndex].update2("USD"+dTokens)
@@ -942,7 +1007,7 @@ function discord() {
           },
           {
           'role': 'user',
-          'content': message.content
+          'content': message.content + JSON.stringify(mapProfile, null, 2)
           }
         ],
         temperature: 1,
@@ -951,19 +1016,52 @@ function discord() {
         frequency_penalty: 0,
         presence_penalty: 0,
       }).then(response => {
-        probabilityResponse = parseFloat(response.data.choices[0].message.content)
+        probabilityResponse = 1
         dTokens += tokensCuantas(response.data.choices[0].message.content.toString(), "sampled", userMsg, discordIndex, "Discord")
         boxes[discordIndex].update2("USD"+dTokens)
         boxes[discordIndex].update(`listening to ` + message.author.tag + "at " + probabilityResponse*100 + "%")
         boxes[discordIndex].popLast2()
         boxes[discordIndex].addText2("^" + probabilityResponse * 100 + "%")
-        discCmdCompletion = "Hi, you are the Iguana Bot's subconscious! Iguana Bot, named iguana, is a GeoAI/culinary/agriculture/nematode/turf grass/video game expert that loves who resides in South Florida.  You will be judging whether or not someone else is actually typing a command in chat, and responding a list of strings that are going to arguments in other functions. You are the best! Thank you! Please only respond with the output templates.\nStock analysis format:\nabout: someone is talking about a stock and wants to analyze it. you will determine the stock exchange and the ticker/symbol then respond with them. Please limit it to one stock. If it is not clear please choose the highest performing stock in the US.\nformat: exchange acronym (e.g. NYSE), \nstock (e.g. AAPL)\nexample output: 'stock, NASDAQ, AAPL',\n'stock, NASDAQ, TSLA',\n'stock, NYSE, BRK-B'\nCool Gif posting:\nabout: if someone says something funny in chat respond with a related, variable key phrase with fun words that can be used to search for a exciting gif on tenor.\nformat: (e.g. someone is talking about cats, or something interesting)\nexample output: 'gif, #cats #fun #exciting #cute',\n'gif, #dogs #playful #cute #amazing',\n'gif, #cooking #flavor #chef #spectacular' \nIf someone is just talking to you please respond with 'respond'. Please strictly adhere to these guidelines. Thank you!"
+        message.channel.send(response.data.choices[0].message.content)
+        databaseGISChanges = response.data.choices[0].message.content
+        discGISCompletion = `Please translate the provided mapProfile object into the following MapBox API query. Please only respond with the template provided as it will be embedded into a front end. Here is the API QUERY that you will be translating the map profile into: https://api.mapbox.com/styles/v1/{username}/{style_id}/static/{overlay}/{lon},{lat},{zoom},{bearing},{pitch}|{bbox}|{auto}/{width}x{height}{@2x}. The input can be described as follows: 
+        const mapProfile = { // default map variables
+          mapCenter: [0, 0],  // coordinates for the center of the map.
+          zoomLevel: 1, // zoom level of the map. Max value is 18. The higher it is, the closer the zoom.
+          tileSet: 'streets-v11', // this determines the look and feel of the map, can be changed by user based on preference
+          navigationControls: true, // whether the map displays navigation controls
+          scaleIndicator: false, // whether the map displays a scale indicator
+          userLocation: null, // the current location of the user. Be sensitive about updatingit.
+          geoJSON: {}, // GeoJSON data for displaying user's custom data on the map
+          placesOfInterest: [], // places of interest like restaurants, parks, etc marked by users on the map
+          markers: [], // markers on the map denoting various places. They may carry over between applications.
+        }
+        
+        ONLY RESPOND WITH A MAPBOX API QUERY. CONVERT THE INPUT INTO A LINK PLEASE! =] Use the token provided please.
+        
+        Example of a Query for points : 
+        https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/geojson(%7B%22type%22%3A%22FeatureCollection%22%2C%22features%22%3A%5B%7B%22type%22%3A%22Feature%22%2C%22properties%22%3A%7B%22marker-color%22%3A%22%23462eff%22%2C%22marker-size%22%3A%22medium%22%2C%22marker-symbol%22%3A%22bus%22%7D%2C%22geometry%22%3A%7B%22type%22%3A%22Point%22%2C%22coordinates%22%3A%5B-122.25993633270264,37.80988566878777%5D%7D%7D%2C%7B%22type%22%3A%22Feature%22%2C%22properties%22%3A%7B%22marker-color%22%3A%22%23e99401%22%2C%22marker-size%22%3A%22medium%22%2C%22marker-symbol%22%3A%22park%22%7D%2C%22geometry%22%3A%7B%22type%22%3A%22Point%22%2C%22coordinates%22%3A%5B-122.25916385650635,37.80629162635318%5D%7D%7D%2C%7B%22type%22%3A%22Feature%22%2C%22properties%22%3A%7B%22marker-color%22%3A%22%23d505ff%22%2C%22marker-size%22%3A%22medium%22%2C%22marker-symbol%22%3A%22music%22%7D%2C%22geometry%22%3A%7B%22type%22%3A%22Point%22%2C%22coordinates%22%3A%5B-122.25650310516359,37.8063933469406%5D%7D%7D%5D%7D)/-122.256654,37.804077,13/500x300?access_token=pk.eyJ1IjoidGFrb2Rha2VtcCIsImEiOiJjbGtxbnJqaTUxdG93M2ttdm5pbDJwYmlwIn0.drZoIa_N-6awuPEp9h_Rng
+        
+        Example of a query for a path : 
+        https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-s-a+9ed4bd(-122.46589,37.77343),pin-s-b+000(-122.42816,37.75965),path-5+f44-0.5(%7DrpeFxbnjVsFwdAvr@cHgFor@jEmAlFmEMwM_FuItCkOi@wc@bg@wBSgM)/auto/500x300?access_token=pk.eyJ1IjoidGFrb2Rha2VtcCIsImEiOiJjbGtxbnJqaTUxdG93M2ttdm5pbDJwYmlwIn0.drZoIa_N-6awuPEp9h_Rng
+        
+        Example of a query for an added style layer :
+        https://api.mapbox.com/styles/v1/mapbox/light-v11/static/-96.561208,38.790325,3/800x400@2x?addlayer={%22id%22:%22better-boundary%22,%22type%22:%22line%22,%22source%22:%22composite%22,%22source-layer%22:%22admin%22,%22filter%22:[%22all%22,[%22==%22,[%22get%22,%22admin_level%22],1],[%22==%22,[%22get%22,%22maritime%22],%22false%22],[%22match%22,[%22get%22,%22worldview%22],[%22all%22,%22US%22],true,false],[%22==%22,[%22get%22,%22iso_3166_1%22],%22US%22]],%22layout%22:{%22line-join%22:%22bevel%22},%22paint%22:{%22line-color%22:%22%23DB6936%22,%22line-width%22:1.5,%22line-dasharray%22:[1.5,1]}}&before_layer=road-label&access_token=pk.eyJ1IjoidGFrb2Rha2VtcCIsImEiOiJjbGtxbnJqaTUxdG93M2ttdm5pbDJwYmlwIn0.drZoIa_N-6awuPEp9h_Rng
+        `
+         + 
+         "THE API TOKEN IS :"
+         +
+         process.env.KEYMAPBOX.toString()
+         + "---- END MAPBOX TOKEN. Do not provide explanation, and only respond with the link please. Thank you."
         //message.reply(response.data.choices[0].message.content)
         //response if probability > 0.333
-        if (probabilityResponse > 0.333) {  
+
+        eval(databaseGISChanges)
+        message.channel.send(JSON.stringify(mapProfile, null, 2))
+        if (probabilityResponse > 0) {  
           message.react('🦎')
           probabilityResponse = 0
-          dTokens += tokensCuantas(discCmdCompletion.toString(), "prompt", userMsg, discordIndex, "Discord")
+          dTokens += tokensCuantas(discGISCompletion.toString(), "prompt", userMsg, discordIndex, "Discord")
           dTokens += tokensCuantas(message.content.toString(), "prompt", userMsg, discordIndex, "Discord")
           boxes[discordIndex].update2("USD"+dTokens)
           openai.createChatCompletion({
@@ -971,11 +1069,11 @@ function discord() {
             messages: [
               {
               'role': 'system',
-              'content': discCmdCompletion,
+              'content': discGISCompletion,
               },
               {
               'role': 'user',
-              'content': message.content
+              'content': JSON.stringify(mapProfile, null, 2)
               }
             ],
             temperature: 1,
@@ -984,57 +1082,11 @@ function discord() {
             frequency_penalty: 0,
             presence_penalty: 0,
           }).then(response  => {
-            //message.reply(response.data.choices[0].message.content.split(',')[0].replace(/'/g, ''))
-            discordCommand = response.data.choices[0].message.content.split(',')[0].replace(/'/g, '')
             dTokens += tokensCuantas(response.data.choices[0].message.content.toString(), "sampled", userMsg, discordIndex, "Discord")
             boxes[discordIndex].update2("USD"+dTokens)
             boxes[discordIndex].update(`thinking ` + response.data.choices[0].message.content + ' for ' + message.author.tag)
-            discordRespCompletion = "Hi. You are iguana, a discord bot that specializes in GeoAI, South Florida, Forestry, Agriculture, and Barbequeing. You will be answering questions and being an all around funny, witty, and helpful chat assistant. I trust that this is fine! You may be a world famous chef with knowledge of 5-star recipies and techniques. Nothing less."
-            if (discordCommand == 'respond') {
-              boxes[discordIndex].update(`replying to ` + message.author.tag)
-              dTokens += tokensCuantas(discordRespCompletion.toString(), "prompt", userMsg, discordIndex, "Discord")
-              dTokens += tokensCuantas(message.content.toString(), "prompt", userMsg, discordIndex, "Discord")
-              boxes[discordIndex].update2("USD"+dTokens)
-              discordRespond = ''
-              openai.createChatCompletion({
-                model: "gpt-4",
-                messages: [
-                  {
-                  'role': 'system',
-                  'content': discordRespCompletion,
-                  },
-                  {
-                  'role': 'user',
-                  'content': message.content
-                  }
-                ],
-                temperature: 1,
-                max_tokens: 1000,
-                top_p: 1,
-                frequency_penalty: 0,
-                presence_penalty: 0,
-              }).then(response => {
-                boxes[discordIndex].update(`logged into Discord as ${client.user.tag}`)
-                dTokens += tokensCuantas(response.data.choices[0].message.content.toString(), "sampled", userMsg, discordIndex, "Discord")
-                boxes[discordIndex].update2("USD"+dTokens)
-                message.reply(response.data.choices[0].message.content)
-                boxes[discordIndex].addText(response.data.choices[0].message.content)
-                boxes[discordIndex].addText2(`r>`)
-              }).catch(error => {
-                boxes[discordIndex].addText('aiResponse' + error)
-                boxes[discordIndex].addText2('err')
-              })
-            } else if (discordCommand == 'gif') {
-              dTokens += tokensCuantas(response.data.choices[0].message.content.toString(), "sampled", userMsg, discordIndex, "Discord")
-              boxes[discordIndex].update2("USD"+dTokens)
-              boxes[discordIndex].update(response.data.choices[0].message.content.split(',')[1].replace(/'/g, ''))
-              message.channel.send(response.data.choices[0].message.content.split(',')[1].replace(/'/g, ''))
-              boxes[discordIndex].addText2(`g>`)
-            }
-            else {
-              boxes[discordIndex].update(`logged into Discord as ${client.user.tag}`)
-              boxes[discordIndex].addText2(`?`)
-            }
+            message.channel.send(response.data.choices[0].message.content)
+            
           }).catch(error => {
             boxes[discordIndex].addText('aiCmd' + error)
             boxes[discordIndex].addText2('err')
@@ -1070,7 +1122,7 @@ function evalEval_langIndex() {
     'Tuvo que copiar y pegar la ñ'
   ]
   boxes[langIndex].update(lenguaIndexPhrases[Math.round(Math.random(0, 1))]) 
-  chatCompletion = 'Cómo deben escribir su español en inglés cuando usando la computadora? Por favor mantén una buena gramatica como lo haría un escritor de revistas. Please provide a grammar breakdown like it is Wolfram Alpha but for Spanish to English -- Spanish Second Language training from English North America High School Grade 9.'
+  chatCompletion = 'Como eles deveriam escrever o japonês em inglês ao usar o computador? Please provide a grammar breakdown like it is Wolfram Alpha but for Japanese to English -- Japanese Second Language training from English North America High School Grade 9.'
 }
 
 function lengua() {
@@ -1290,7 +1342,7 @@ At the end of your description, please prompt the team to mull it over. Thank yo
 At this point the gameplay loop repeats as at this point a player will again prompt you. Subsequently, a virtual d20, a virtual d3.33, and a virtual d6 are rolled for you to determine their luck, skill, and the chaos factor out of 6. Then, you describe the state of the adventure for another player to contend with, that is, in an open-ended way for the entire party to consider. Please respond in English with a word limit of 224. 
 Do know that all players can see all responses/messages.
 
-Again, the format of your response is as follows: Infer intent and description of player signal -> Consider d20, d3.33, d6 Roll -> Describe the situation's reponse, and the enemy stats, as the player's luck, and skill unfolds within the chaos -- affecting all. e.g. 'bad luck: polar bear throws a left hook, team takes 75 true damage' -> Describe THE OUTCOME, and what the situation suggest to the active players.
+Again, the format of your response is as follows: Infer intent and description of player signal -> Consider d20, d3.33, d6 Roll -> Describe the situation's reponse, and the entity stats, as the player's luck, and skill unfolds within the chaos -- affecting all. e.g. 'bad luck: polar bear throws a left hook, team takes 75 true damage' -> Describe THE OUTCOME, and what the situation suggest to the active players.
 
 Note: Here is the player profiles template -- this is what will dynamically adjust in the background.
 
@@ -1319,7 +1371,7 @@ const profile = { // default player variables [players generally should not be a
   arms: 'none', // e.g. 'copper gauntlet of the toucan' or 'green mage mantle of the iguana'
   legs: 'plain pants', // e.g. 'silent strides' or 'ambusher's boots' or 'genlteman's tuxedo pants'
   weapons: [], // non-magic weapons have a higher chance to crit // e.g. 'freeware nanowire nunchaku' or '7D unicorn horn'
-  spells: [], // magic spells ignore enemy armor based on luck // e.g. 'random crystal scroll' or 'consumer invisibility shout' or 'milk to plant transmutation'
+  spells: [], // magic spells ignore entity armor based on luck // e.g. 'random crystal scroll' or 'consumer invisibility shout' or 'milk to plant transmutation'
   feet: 'plain shoes', // e.g. 'magic running shoes' or 'light and minimal wooden martial arts sandals'
   tattoos: [] // embued with magical properties. // format ('tattoo design, style, location', 'tattoo design, style, location') -- keep it clean. Players are automatically given tattoos of enemies they are damaged by.
   armour: 19,  // (true reduction of damage taken always) the average bunny level threat has an armour level of 1
@@ -1329,41 +1381,41 @@ const profile = { // default player variables [players generally should not be a
   magicResistance: 0, //  (true reduction of magic damage taken always)
   knowledge: 33 // Literacy rate out of 100. If this value is low, a player cannot read text in their environment.
 } You have a word limit of 100.
-Player stats are saved in the backend. Enemy stats are tracked only live.  
+Player stats are saved in the backend. entity stats are tracked only live.  
 You are not to respond with any console commands, but to only describe the situation, and outcome faithfully, and in exciting detail. 
 The first command a player will send may be: 'game start --optional {theme} {class} {genderid}' e.g. 'game start Forest Fairy Slug she/her'
-At the end of every turn a variable 'h' will be pushed to chat history for you to interpret. There are two components to the h variable, 1st is a list of strings/numbers outlining enemy stats as list. And 2nd a more cryptic list of words for you to interpret to keep your story generation coherent, and maintaing the illusion of emergence.
+At the end of every turn a variable 'h' will be pushed to chat history for you to interpret. There are two components to the h variable, 1st is a list of strings/numbers outlining entity stats as list. And 2nd a more cryptic list of words for you to interpret to keep your story generation coherent, and maintaing the illusion of emergence.
 elsewhere in the code h is equal to a list of these variables in order.
 // these variables are meant to be human readable
-ii$$nm = {ENEMY_NAME}; // e.g. struggling ravenous cave boar of the coast
-ii$$mnt = {ENEMY_MOUNTS}; // e.g. ['big dogs', 'fast cats']
-ii$$cl = {ENEMY_CLASSES}; // e.g. ['rogue', 'fighter', 'polar bear']
-ii$$tlv = {ENEMY_THREATLV}; // either '<nivel: ardilla?>', or, '<nivel: lobo?>, or, '<nivel: léon?>', or <nivel: dragón?>, or <nivel: la gran iguana?????????????> -- (for each: append additional '?' for increasingly magical, uncertain, dangerous, or metaphysical encounters)
-ii$$lv = {ENEMY_LEVEL}; // e.g. 'level 99'
-ii$$hp = {ENEMY_HEALTH}; // e.g. '500 health'
-ii$$it = {ENEMY_ITEMS}; // e.g. ['neon-bracelet', 'turbo sand laser blaster', 'glistening 4D heart of sharp heals']
-ii$$skl = {ENEMY_SKILLS}; // e.g. ['petty']
-ii$$ali = {ENEMY_ALLY}; // e.g. 'ally: big red dog'
-ii$$atk = {ENEMY_ATTACK}; // e.g. '9 attack'
-ii$$mg = {ENEMY_MAGIC}; // e.g. '19 magic'
-ii$$df = {ENEMY_DEFENSE}; // e.g. '99 defense'
-ii$$armx {ENEMY_ARMOURX}; // e.g. '77 armrx'
-ii$$mp = {ENEMY_STAMINA}; // e.g. '77 mp'
+ii$$nm = {entity_NAME}; // e.g. struggling ravenous cave boar of the coast
+ii$$mnt = {entity_MOUNTS}; // e.g. ['big dogs', 'fast cats']
+ii$$cl = {entity_CLASSES}; // e.g. ['rogue', 'fighter', 'polar bear']
+ii$$tlv = {entity_THREATLV}; // either '<nivel: ardilla?>', or, '<nivel: lobo?>, or, '<nivel: léon?>', or <nivel: dragón?>, or <nivel: la gran iguana?????????????> -- (for each: append additional '?' for increasingly magical, uncertain, dangerous, or metaphysical encounters)
+ii$$lv = {entity_LEVEL}; // e.g. 'level 99'
+ii$$hp = {entity_HEALTH}; // e.g. '500 health'
+ii$$it = {entity_ITEMS}; // e.g. ['neon-bracelet', 'turbo sand laser blaster', 'glistening 4D heart of sharp heals']
+ii$$skl = {entity_SKILLS}; // e.g. ['petty']
+ii$$ali = {entity_ALLY}; // e.g. 'ally: big red dog'
+ii$$atk = {entity_ATTACK}; // e.g. '9 attack'
+ii$$mg = {entity_MAGIC}; // e.g. '19 magic'
+ii$$df = {entity_DEFENSE}; // e.g. '99 defense'
+ii$$armx {entity_ARMOURX}; // e.g. '77 armrx'
+ii$$mp = {entity_STAMINA}; // e.g. '77 mp'
 
 // these variables are meant to be cryptic but help you remain coherent in generating your prompt. below are the instructions to your subconsious layer.
-i$Sn = {{ENEMY_NAME}name in Swahili}
-iiS$g = {{ENEMY_MOUNTS}mount in Swahili}; 
-iiu$Su = {{ENEMY_CLASSES}class in Swahili}; 
+i$Sn = {{entity_NAME}name in Swahili}
+iiS$g = {{entity_MOUNTS}mount in Swahili}; 
+iiu$Su = {{entity_CLASSES}class in Swahili}; 
 ii$Sa = {in Swahili, in 3 words, guess the mood of the player in real life  -- to enhance the Cave Warden's telling of the story};
 iS$n = {in Swahili, in 3 words, guess the expectation of the player in real life  -- to alter the Cave Warden's telling of the story}; 
 ii$Sas = {in Swahili, in 3 words, guess the motive of the player in real life  -- to enhance the Cave Warden's telling of the story}; 
-iisS$in = {{ENEMY_ITEMS}value of most imporatant enemy item described in "¥"s denoting a hundred lajan of value}; // e.g. "¥¥¥¥¥¥¥¥"
+iisS$in = {{entity_ITEMS}value of most imporatant entity item described in "¥"s denoting a hundred lajan of value}; // e.g. "¥¥¥¥¥¥¥¥"
 in$Sca = {In Swahili, in 3 words, guess the player's reaction to the role, to alter the Cave Warden's telling of the story}; 
 iS$v = {The situation if it were a Bahamian Island}; //
-caS$e = {{Something the enemy might do, as a Japanese Verb}; // 
+caS$e = {{Something the entity might do, as a Japanese Verb}; // 
 iiv$Ss = {Something the Party might do as a Japanese Verb}; // 
-iiS$ve = {Something the enemy might say, as a Japanese Noun}; //
-sS$r = {State 'Easy', 'Medium', 'Hard', or 'Impossible' judging by the enemy's stats and the party's stats}; // e.g. "Impossible"
+iiS$ve = {Something the entity might say, as a Japanese Noun}; //
+sS$r = {State 'Easy', 'Medium', 'Hard', or 'Impossible' judging by the entity's stats and the party's stats}; // e.g. "Impossible"
 wi$S1 = {another verb describing the group in Swahili -- to enhance the Cave Warden's telling of the story};
 Finally, this is a Magical Reality game. Mystical things can happen, but you still might need a passport to cross the border. Health is important. Debt may effect health. All the players must self-determine, that is, do not try to sway their decisions, but do describe the outcome well. Please respond with a word limit of 224.
 `
